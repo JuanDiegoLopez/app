@@ -1,5 +1,6 @@
 import { TitleCasePipe } from '@angular/common';
 import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { ToastrService } from 'ngx-toastr';
 import { fadeIn, fadeInOut } from 'src/app/shared/animations';
 import { Character } from 'src/app/shared/models/character.model';
 import { Event } from 'src/app/shared/models/event.model';
@@ -31,7 +32,11 @@ export class ChatBodyComponent implements OnInit {
   public progress: Progress;
   public currentEvent: Event;
 
-  constructor(private authService: AuthService, private progressService: ProgressService, private titleCase: TitleCasePipe) {}
+  constructor(
+    private authService: AuthService,
+    private progressService: ProgressService,
+    private titleCase: TitleCasePipe,
+    private toastr: ToastrService) {}
 
   ngOnInit(): void {
     this.progressService.getProgress(this.authService.getUser().username).subscribe(progress => {
@@ -68,7 +73,6 @@ export class ChatBodyComponent implements OnInit {
 
   public handleClickedOption(option: Option) {
     if (!option) {
-      console.log('Continuar....', this.currentEvent)
       if(this.currentEvent.condition &&
         this.currentEvent.condition.length > 0) {
           for(const condition of this.currentEvent.condition) {
@@ -81,8 +85,6 @@ export class ChatBodyComponent implements OnInit {
       this.processEvent(this.currentEvent.child);
       return;
     }
-
-    console.log('Opción escogida...', option);
 
     const timestamp = this.currentEvent.timestamp;
     const parameter = this.currentEvent.parameter;
@@ -109,8 +111,6 @@ export class ChatBodyComponent implements OnInit {
   public processEvent(currentEventKey, fadeOut = false) {
     this.currentEventKey = currentEventKey;
     this.currentEvent = this.conversation.events[this.currentEventKey];
-
-    console.log(this.currentEvent);
     let matchCondition;
     if (this.currentEvent.condition) {
       matchCondition = this.currentEvent.condition.some(condition => this.progress.parameters[condition.label] === condition.value);
@@ -178,11 +178,7 @@ export class ChatBodyComponent implements OnInit {
       }, 100);
     }
 
-    this.progressService.saveProgress(this.progress).subscribe(response => {
-      console.log(response);
-    }, error => {
-      console.log(error);
-    });
+    this.progressService.saveProgress(this.progress).subscribe(response => {}, error => this.toastr.error(error.error.message));
   }
 
   private addMessage(timeout = 1) {
